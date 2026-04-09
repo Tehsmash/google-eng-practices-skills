@@ -1,0 +1,23 @@
+{
+  "skill_name": "google-cl-description",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I've staged some changes and need a commit message. Here's the diff:\n\n```diff\ndiff --git a/src/network/client.go b/src/network/client.go\nindex 3a2f1b..8d4e2c 100644\n--- a/src/network/client.go\n+++ b/src/network/client.go\n@@ -12,6 +12,8 @@ import (\n \t\"net/http\"\n \t\"time\"\n )\n+const maxRetries = 3\n+const retryBackoff = 500 * time.Millisecond\n \n type Client struct {\n \tbaseURL string\n@@ -34,10 +36,25 @@ func (c *Client) Get(path string) (*Response, error) {\n \treq, err := http.NewRequest(\"GET\", c.baseURL+path, nil)\n \tif err != nil {\n \t\treturn nil, err\n \t}\n-\tresp, err := c.http.Do(req)\n-\tif err != nil {\n-\t\treturn nil, err\n+\tvar resp *http.Response\n+\tfor attempt := 0; attempt < maxRetries; attempt++ {\n+\t\tresp, err = c.http.Do(req)\n+\t\tif err == nil {\n+\t\t\tbreak\n+\t\t}\n+\t\tif attempt < maxRetries-1 {\n+\t\t\ttime.Sleep(retryBackoff)\n+\t\t}\n \t}\n-\treturn parseResponse(resp)\n+\tif err != nil {\n+\t\treturn nil, fmt.Errorf(\"request failed after %d attempts: %w\", maxRetries, err)\n+\t}\n+\treturn parseResponse(resp)\n }\n```\n\nHelp me write a commit message.",
+      "expected_output": "A commit message with an imperative first line summarising the change (e.g. 'Add retry logic to HTTP client'), followed by a blank line, then a body explaining why the retry mechanism was added and any relevant details about the implementation (e.g. backoff, max attempts).",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Can you write a PR description for my changes? I refactored our config loader to read settings from environment variables instead of a hardcoded config file. Before this, the app would fail to start if config.json wasn't present. Now it reads from env vars with sensible defaults, and falls back to config.json if it exists. This was needed because our deployment to Kubernetes kept failing — the config file wasn't being mounted correctly. I updated the tests to set env vars instead of writing temp files.",
+      "expected_output": "A PR description with a clear first line summarising the refactor, followed by a body explaining the problem (Kubernetes deployment failures due to missing config.json), the solution (env vars with config.json fallback), and mentioning the test updates.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I just finished adding dark mode to our React app and staged everything. The changes touch: a new ThemeContext and ThemeProvider in src/context/theme.tsx, a useTheme hook in src/hooks/useTheme.ts, updates to about 15 components to use CSS variables instead of hardcoded colors, a new theme toggle button component, localStorage persistence for the user's theme preference, and updated jest tests. Can you write a commit message for all of this?",
+      "expected_output": "Either a single focused commit message covering the full dark mode feature, OR a recommendation to split into smaller commits (e.g. theming infrastructure, component updates, persistence) with messages for each. If a single message, the first line should be imperative and specific, and the body should explain the approach and scope.",
+      "files": []
+    }
+  ]
+}
